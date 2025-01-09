@@ -327,6 +327,8 @@ console.log(data);
 
 #### Example Tracking Response
 
+<mark>In test mode, shipengine will not track shipment </mark>
+
 ![Tracking Image](/public/tracking.png) 
 
 ---
