@@ -275,7 +275,7 @@ const ShippingRatesPage = () => {
           </div>
         )}
         {labelPdf && (
-          <button><Link target="_blank" href={labelPdf}>Download Label</Link></button>
+         <Link target="_blank" href={labelPdf}> <button className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Download Label</button></Link>
         )}
         {trackingObj && (
           <div className="mt-8">
@@ -286,7 +286,7 @@ const ShippingRatesPage = () => {
             <p> labelId: {trackingObj.labelId}</p>
             <p> carrierCode: {trackingObj.carrierCode}</p>
             <Link href={`/tracking/?labelId=${trackingObj.labelId}`}>
-              <button>Track Order</button>
+              <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Track Order</button>
             </Link>
           </div>
         )}
