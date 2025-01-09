@@ -1,101 +1,310 @@
-import Image from "next/image";
+"use client";
+import React, { useState } from "react";
+import axios from "axios";
+import { Address, Rate, trackingObjType } from "@/type";
+import { cartProductsWhichCanBeShipped } from "@/data";
+import Link from "next/link";
 
-export default function Home() {
+// don't judge frontend code i have build it to uderstand shipengine api 😁
+
+const ShippingRatesPage = () => {
+  // to ship address
+  // i added defualt address which help you understand structure of address
+  const [shipeToAddress, setshipeToAddress] = useState<Address>({
+    name: "John Doe",
+    phone: "+1 555-678-1234",
+    addressLine1: "1600 Pennsylvania Avenue NW",
+    addressLine2: "", // Optional
+    cityLocality: "Washington",
+    stateProvince: "DC",
+    postalCode: "20500",
+    countryCode: "US",
+    addressResidentialIndicator: "no", // 'no' means a commercial address
+  });
+
+  const [rates, setRates] = useState<Rate[]>([]);
+  const [rateId, setrateId] = useState<string | null>(null);
+  const [labelPdf, setLabelPdf] = useState<string | null>(null);
+  const [trackingObj, setTrackingObj] = useState<trackingObjType | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  // Function to handle form submission of shipping rates
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrors([]);
+    setRates([]);
+
+    try {
+      const response = await axios.post("/api/shipengine/get-rates", {
+        shipeToAddress,
+        // map the cart products which can be shipped and use only weight and dimensions
+        packages: cartProductsWhichCanBeShipped.map((product) => ({
+          weight: product.weight,
+          dimensions: product.dimensions,
+        })),
+      });
+      // see the response in browser
+      console.log(response.data);
+      // Update the state with the fetched rates
+      setRates(response.data.shipmentDetails.rateResponse.rates);
+    } catch (error) {
+      console.log(error);
+      setErrors(["An error occurred while fetching rates."]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to create label from selected rate
+  const handleCreateLabel = async () => {
+    if (!rateId) {
+      alert("Please select a rate to create a label.");
+    }
+
+    setLoading(true);
+    setErrors([]);
+
+    try {
+      // get rateId which user selected
+      const response = await axios.post("/api/shipengine/label", {
+        rateId: rateId,
+      });
+      const labelData = response.data;
+      // see the response of label in browser
+      console.log(labelData);
+      // set pdf url
+      setLabelPdf(labelData.labelDownload.href);
+      // set tracking obj
+      setTrackingObj({
+        trackingNumber: labelData.trackingNumber,
+        labelId: labelData.labelId,
+        carrierCode: labelData.carrierCode,
+      });
+    } catch (error) {
+      console.log(error);
+      setErrors(["An error occurred while creating the label."]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen text-black bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+          Shipping Rates Calculator
+        </h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        {/* Form Section */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* To Address Section */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Ship To Address
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Name"
+                value={shipeToAddress.name}
+                onChange={(e) =>
+                  setshipeToAddress({ ...shipeToAddress, name: e.target.value })
+                }
+                className="p-2 border border-gray-300 rounded-md"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Phone"
+                value={shipeToAddress.phone}
+                onChange={(e) =>
+                  setshipeToAddress({
+                    ...shipeToAddress,
+                    phone: e.target.value,
+                  })
+                }
+                className="p-2 border border-gray-300 rounded-md"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Address Line 1"
+                value={shipeToAddress.addressLine1}
+                onChange={(e) =>
+                  setshipeToAddress({
+                    ...shipeToAddress,
+                    addressLine1: e.target.value,
+                  })
+                }
+                className="p-2 border border-gray-300 rounded-md"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Address Line 2"
+                value={shipeToAddress.addressLine2}
+                onChange={(e) =>
+                  setshipeToAddress({
+                    ...shipeToAddress,
+                    addressLine2: e.target.value,
+                  })
+                }
+                className="p-2 border border-gray-300 rounded-md"
+              />
+              <input
+                type="text"
+                placeholder="City"
+                value={shipeToAddress.cityLocality}
+                onChange={(e) =>
+                  setshipeToAddress({
+                    ...shipeToAddress,
+                    cityLocality: e.target.value,
+                  })
+                }
+                className="p-2 border border-gray-300 rounded-md"
+                required
+              />
+              <input
+                type="text"
+                placeholder="State/Province"
+                value={shipeToAddress.stateProvince}
+                onChange={(e) =>
+                  setshipeToAddress({
+                    ...shipeToAddress,
+                    stateProvince: e.target.value,
+                  })
+                }
+                className="p-2 border border-gray-300 rounded-md"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Postal Code"
+                value={shipeToAddress.postalCode}
+                onChange={(e) =>
+                  setshipeToAddress({
+                    ...shipeToAddress,
+                    postalCode: e.target.value,
+                  })
+                }
+                className="p-2 border border-gray-300 rounded-md"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Country Code (e.g., PK)"
+                value={shipeToAddress.countryCode}
+                onChange={(e) =>
+                  setshipeToAddress({
+                    ...shipeToAddress,
+                    countryCode: e.target.value,
+                  })
+                }
+                className="p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {loading ? "Calculating..." : "Get Shipping Rates"}
+          </button>
+        </form>
+
+        {/* Display Available Rates */}
+        {rates.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Available Shipping Rates
+            </h2>
+            <div className="gap-4 flex items-center flex-wrap">
+              {rates.map((rate) => (
+                <div
+                  key={rate.rateId}
+                  className={`p-4 border rounded-lg shadow-md transition-transform transform hover:scale-105 cursor-pointer ${
+                    rateId === rate.rateId
+                      ? "border-blue-500 bg-blue-100"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                  onClick={() => setrateId(rate.rateId)}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="shippingRate"
+                      checked={rateId === rate.rateId}
+                      onChange={() => setrateId(rate.rateId)}
+                      className="form-radio h-4 w-4 text-blue-500"
+                    />
+                    <div>
+                      <p className="text-lg font-medium text-gray-700">
+                        <strong>Carrier:</strong> {rate.carrierFriendlyName}
+                      </p>
+                      <p className="text-gray-600">
+                        <strong>Service:</strong> {rate.serviceType}
+                      </p>
+                      <p className="text-gray-800 font-semibold">
+                        <strong>Cost:</strong> {rate.shippingAmount.amount}{" "}
+                        {rate.shippingAmount.currency}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Create Label Button */}
+        {rateId && (
+          <div className="mt-8">
+            <button
+              onClick={handleCreateLabel}
+              disabled={loading}
+              className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+            >
+              {loading ? "Creating Label..." : "Create Label"}
+            </button>
+          </div>
+        )}
+        {labelPdf && (
+          <button><Link target="_blank" href={labelPdf}>Download Label</Link></button>
+        )}
+        {trackingObj && (
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Tracking thinks (We are using ShipEngine test api key so order will not trace)
+            </h2>
+            <p>tracking number: {trackingObj.trackingNumber}</p>
+            <p> labelId: {trackingObj.labelId}</p>
+            <p> carrierCode: {trackingObj.carrierCode}</p>
+            <Link href={`/tracking/?labelId=${trackingObj.labelId}`}>
+              <button>Track Order</button>
+            </Link>
+          </div>
+        )}
+        {errors.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Errors</h2>
+            <div className="space-y-2">
+              {errors.map((error, index) => (
+                <p key={index} className="text-red-500">
+                  {error}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
-}
+};
+
+export default ShippingRatesPage;
