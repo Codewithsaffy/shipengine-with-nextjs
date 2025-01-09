@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-- [Introduction](#introduction)  
+- [My Self Introduction](#introduction)  
 - [Getting Started](#getting-started)  
   - [Prerequisites](#prerequisites)  
   - [Installation](#installation)  
@@ -20,7 +20,7 @@
 
 ## Introduction
 
-Hi, I'm **Muhammad Yousuf**, a passionate web developer and a leader student at GIAIC (Governor of Sindh’s IT Course). I specialize in building modern, responsive, and high-performance web applications using **Next.js**, **Tailwind CSS**, and **TypeScript**. Some of my projects include a task management app, a full-stack blog website, and an e-commerce platform.
+Hi, I'm **Muhammad Yousuf**, a passionate web developer and a leader student at GIAIC (Governor of Sindh’s IT Course). I specialize in building modern, responsive, and high-performance web applications using **Next.js**, **Tailwind CSS**, and **TypeScript**.
 
 ---
 
@@ -326,9 +326,7 @@ console.log(data);
 ```
 
 #### Example Tracking Response
-
 <mark>In test mode, shipengine will not track shipment </mark>
-
 ![Tracking Image](/public/tracking.png) 
 
 ---
